@@ -35,8 +35,11 @@ Harder skill = harder question = bigger reward.
 3. Select skill → valid target tiles highlighted (based on skill range + hitbox)
 4. Confirm target → Math Engine generates question
 5. Correct answer → skill fires, hitbox applied, effects resolved
-6. Wrong answer → skill misses
+6. Wrong answer → skill fails, AP is still spent
 7. Turn ends, next character in initiative queue acts
+
+**Universal rule:** ALL skills require a math question — attack, defend, and heal alike.
+A wrong answer always wastes the AP. No free actions.
 
 ### Character Stats
 
@@ -55,11 +58,41 @@ All stats grow on level up. MP, AP, and PP can also increase with level ups.
 Each resource is independent — using a potion never costs an attack, and vice versa.
 
 ### Skill Properties
-Each skill defines its own:
-- **Range** — how far it can reach (in tiles)
-- **Hitbox** — shape of affected area (single tile, 2×2, line, cross, etc.)
-- **Difficulty** — Easy / Medium / Hard (feeds into Math Engine)
-- **Effect** — damage, heal, status (status effects deferred to later phase)
+Each skill has base stats and 3 ranks. Ranks inherit base stats unless they explicitly override them.
+
+```
+Skill
+├── name
+├── base stats
+│   ├── range        (tiles)
+│   ├── hitbox       (single, 2×2, line, cross, etc.)
+│   └── AP cost
+└── ranks [1, 2, 3]
+    ├── math difficulty   (Easy / Medium / Hard)
+    ├── damage/effect multiplier
+    └── overrides (optional): range, hitbox, AP cost, AoE size
+```
+
+### Skill Ranks
+
+**Rank states (per skill per character):**
+
+| State | Meaning |
+|-------|---------|
+| Locked | Not yet available — must be earned |
+| Unlocked | Available to equip in loadout |
+| Equipped | The rank used in combat |
+
+**Unlock rule:**
+- Age determines starting unlocked rank at character creation (older kids begin with higher ranks already unlocked)
+- Complete a dungeon with rank X equipped → rank X+1 unlocks for that skill
+- Ranks unlock per skill individually — a kid can have rank 2 Slash and rank 1 Frost Bolt simultaneously
+- Unlocked ≠ Equipped — kids choose which rank to equip before each dungeon in the loadout screen
+- A kid may keep rank 1 equipped even after unlocking rank 2 if rank 2 math feels too hard
+
+**What rank changes:**
+- Damage / effect multiplier — always scales with rank
+- Other properties (range, hitbox, AoE, AP cost) — optional per-skill config overrides
 
 ### Death & Recovery
 - A character that reaches 0 HP becomes **Downed** — stays on the map, cannot act
@@ -101,74 +134,203 @@ Each skill defines its own:
 ## Classes
 
 ### Warrior ⚔️
-**Role:** Tank — high HP, physical damage, frontline fighter
-**Stats per level:** HP++, Attack+
+**Role:** Tank — high HP, physical damage, frontline fighter, party protector
+**Stats per level:** HP++, Power+
 
-| Level | Skill | Difficulty |
-|-------|-------|------------|
-| 1 | Slash | Easy |
-| 3 | Charge | Medium |
-| 6 | Whirlwind | Hard |
+| Level | Skill | Type | Notes |
+|-------|-------|------|-------|
+| 1 | Slash | Attack | Single target melee |
+| 1 | Shield Block | Defend | Correct → 50% dmg reduction + taunt; Wrong → no effect, AP wasted |
+| 3 | Charge | Attack | Melee with positional component |
+| 6 | Whirlwind | Attack | AoE melee |
 
 ---
 
 ### Mage 🧙
-**Role:** Glass cannon — low HP, high magic damage
-**Stats per level:** HP+, Magic Attack++
+**Role:** Glass cannon — low HP, high magic damage, ranged
+**Stats per level:** HP+, Power++
 
-| Level | Skill | Difficulty |
-|-------|-------|------------|
-| 1 | Frost Bolt | Easy |
-| 3 | Fireball | Medium |
-| 6 | Blizzard | Hard |
+| Level | Skill | Type | Notes |
+|-------|-------|------|-------|
+| 1 | Frost Bolt | Attack | Single target ranged |
+| 3 | Fireball | Attack | AoE ranged |
+| 6 | Blizzard | Attack | Large AoE ranged |
 
 ---
 
 ### Priest ✨
 **Role:** Healer/Support — keeps party alive, utility skills
-**Stats per level:** HP+, Healing Power++
+**Stats per level:** HP+, Power++
 
-| Level | Skill | Difficulty |
-|-------|-------|------------|
-| 1 | Heal | Easy |
-| 3 | Smite | Medium |
-| 6 | Divine Shield | Hard |
+| Level | Skill | Type | Notes |
+|-------|-------|------|-------|
+| 1 | Heal | Heal | Single target heal; Wrong → heal fails, AP wasted |
+| 3 | Smite | Attack | Ranged holy damage |
+| 6 | Divine Shield | Defend | Protects target ally; details TBD |
 
 ---
 
-## Progression System
-- Characters gain XP from defeating monsters
-- Each level up: stats increase (HP, attack/healing power)
-- New skills unlock at specific levels (see class tables above)
-- Loot drops from monsters (to be designed)
+## Character System
+
+### Per Profile
+- Max **3 characters** per player profile
+- Each character belongs to one class (Warrior, Mage, Priest)
 - Characters are persistent — saved between sessions
+
+### Stats
+
+| Stat | Purpose |
+|------|---------|
+| HP | Survivability |
+| Power | Damage AND healing output — scales with level and gear |
+| Speed | Turn order (higher acts first, heroes beat monsters on tie) |
+| Move Points (MP) | Tiles moved per turn |
+| Attack Points (AP) | Skills used per turn |
+| Potion Points (PP) | Potions used per turn |
+
+### Starting Stats (Level 1)
+
+| Stat | Warrior | Mage | Priest |
+|------|---------|------|--------|
+| HP | 120 | 60 | 80 |
+| Power | 15 | 20 | 18 |
+| Speed | 8 | 12 | 10 |
+| MP | 4 | 3 | 3 |
+| AP | 2 | 2 | 2 |
+| PP | 1 | 1 | 1 |
+
+### Progression
+- Max level: **10**
+- Each level up: all stats increase (amounts TBD per class)
+- New skills unlock at specific levels (see class tables below)
+- Max level is a configuration value — can be adjusted without code changes
 
 ---
 
 ## Math Engine (Separate System)
 
 > The game never specifies a math operation.
-> It only specifies a difficulty level.
-> The Math Engine translates difficulty + player age into an appropriate question.
-
-### Difficulty Levels
-- **Easy** — safe choice, small effect
-- **Medium** — balanced risk/reward
-- **Hard** — high risk, big payoff
-
-### Age → Math Mapping (draft)
-
-| Age | Easy | Medium | Hard |
-|-----|------|--------|------|
-| 6-7 | Addition (under 10) | Addition (under 20) | Subtraction (under 20) |
-| 8-9 | Addition/Subtraction (under 50) | Multiplication (×2-×5) | Multiplication (×6-×9) |
-| 10-11 | Multiplication (all) | Division (simple) | Long division |
-| 12+ | Division | Multi-step | Multi-step + mixed |
+> It only specifies a skill rank (1, 2, or 3).
+> The Math Engine translates rank → question type and complexity.
 
 ### Key Design Principle
 The Math Engine is a standalone module.
-The game calls: `GetQuestion(difficulty, playerAge)` → receives a question + correct answer.
+The game calls: `GetQuestion(rank)` → receives a question + correct answer.
 No other game system needs to know about math operations.
+
+### Rank → Math Mapping (draft)
+
+| Rank | Math Difficulty | Example |
+|------|----------------|---------|
+| 1 | Easy | Addition / subtraction under 20 |
+| 2 | Medium | Multiplication tables |
+| 3 | Hard | Division, multi-step |
+
+### Role of Age
+Age does NOT affect question generation.
+Age determines the **starting unlocked rank** at character creation:
+
+| Age | Starting Unlocked Rank |
+|-----|----------------------|
+| 6-7 | Rank 1 only |
+| 8-9 | Ranks 1-2 |
+| 10+ | Ranks 1-3 |
+
+A younger kid earns higher ranks through play. An older kid starts with more options immediately.
+
+---
+
+## Dungeon System
+
+### Map Structure
+- Each dungeon is a generated map of connected rooms
+- Rooms are connected by doors
+- The full map layout is visible to players at all times
+
+### Visibility (Fog of War)
+- **Current room** — fully lit, fully interactive
+- **Adjacent rooms** — visible but darkened, no interaction
+- **Undiscovered rooms** — hidden until an adjacent room is entered
+- Room contents (monsters, loot) are always hidden until entered — full mystery, no door hints
+
+### Room Types
+| Type | Description |
+|------|-------------|
+| Start | Party spawns here, no monsters |
+| Normal | Contains monsters + possible loot |
+| Empty | No monsters, may contain a chest |
+| Boss | End of dungeon, boss enemy, guaranteed rare loot |
+
+### Party Movement
+- All players occupy the same room at all times — no splitting
+- After combat is resolved, the **party leader** (first player in party) chooses which door to take
+- Entire party moves together into the chosen room
+- On entering a new room: room lights up, adjacent rooms become dimly visible
+
+### Combat Trigger
+- Entering a room with monsters immediately starts combat
+- Players cannot leave the room until all monsters are defeated
+
+### Dungeon Generation
+- Map layout is procedurally generated per dungeon run
+- Boss room is always the furthest room from the start
+- Exact generation rules TBD (guaranteed path to boss, room count range, etc.)
+
+---
+
+## Monster System
+
+### Monster Structure
+```
+Monster
+├── name
+├── type          (regular / boss)
+├── dungeon theme (forest / cave / castle — can appear in multiple)
+├── stats
+│   ├── HP
+│   ├── Power
+│   ├── Speed
+│   ├── MP
+│   └── AP        (no PP — heroes only)
+├── skills []     (same structure as character skills, details filled per monster)
+└── loot table
+    ├── gold      (min, max)
+    ├── XP reward
+    └── item drops [] (item, drop chance %)
+```
+
+### Monster Roster (Phase 1)
+
+| Monster | Type | Dungeon |
+|---------|------|---------|
+| Goblin Archer | Regular | Forest |
+| Orc Fighter | Regular | Forest |
+| Ogre | Boss | Forest |
+| Kobold | Regular | Cave |
+| Gnoll | Regular | Cave |
+| Troll | Boss | Cave |
+| Skeleton | Regular | Castle |
+| Zombie | Regular | Castle |
+| Leech | Boss | Castle |
+
+Some monsters may appear in multiple dungeon themes — same entity, same stats.
+
+### Boss Mechanics
+Bosses are not just stronger regulars — they have unique skills that create special mechanics:
+- **Ogre** — Knockback skill (repositions heroes on the grid)
+- **Troll** — Regenerate skill (recovers HP each turn)
+- **Leech** — Lifesteal skill (heals itself when hitting a player)
+
+All boss mechanics implemented as skills, no special-casing in the engine.
+
+### Monster Turns (No Math)
+Monsters do not answer math questions. The LLM selects their move + skill + quote each turn.
+Monsters always hit when they attack — no accuracy roll.
+
+### Loot
+- Regular monsters drop gold (random range), XP, and items by chance
+- Boss monsters drop guaranteed rare loot + higher gold and XP
+- Specific drop tables defined per monster in config
 
 ---
 
