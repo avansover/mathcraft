@@ -9,18 +9,86 @@ Harder skill = harder question = bigger reward.
 
 ## Core Mechanics
 
-### Combat Loop
-1. Player selects a skill
-2. Math Engine generates a question based on skill difficulty + player age
-3. Correct answer → skill hits, effect applies
-4. Wrong answer → skill misses
-5. Monster turn → LLM selects monster move, target, and generates a quote
-6. Repeat until wave is cleared or party is wiped
-
 ### Risk / Reward
 - Easy skill → easy question → small effect
 - Hard skill → hard question → big effect
 - Players naturally push themselves to attempt harder questions
+
+---
+
+## Combat System
+
+### Map
+- One large scrollable grid map per dungeon (e.g. 16×10 tiles)
+- Fixed viewport with camera auto-panning to active character
+- Player can scroll manually
+- Heroes start at one end, cross to the other fighting through monster encounters
+- Boss room at the end of every dungeon
+
+### Turn Order
+- Initiative-based: characters act in order of their **Speed stat** (highest first)
+- Heroes and monsters interleaved — fastest acts first regardless of side
+
+### A Turn
+1. **Move** — spend Move Points (MP) to reposition on the grid
+2. **Act** — spend Attack Points (AP) to use a skill
+3. Select skill → valid target tiles highlighted (based on skill range + hitbox)
+4. Confirm target → Math Engine generates question
+5. Correct answer → skill fires, hitbox applied, effects resolved
+6. Wrong answer → skill misses
+7. Turn ends, next character in initiative queue acts
+
+### Character Stats
+
+| Stat | Affects |
+|------|---------|
+| HP | Survivability |
+| Attack | Physical damage output |
+| Magic Attack | Spell damage output |
+| Healing Power | Heal amount |
+| Speed | Initiative / turn order |
+| Move Points (MP) | Tiles moved per turn |
+| Attack Points (AP) | Skills used per turn |
+| Potion Points (PP) | Potions used per turn |
+
+All stats grow on level up. MP, AP, and PP can also increase with level ups.
+Each resource is independent — using a potion never costs an attack, and vice versa.
+
+### Skill Properties
+Each skill defines its own:
+- **Range** — how far it can reach (in tiles)
+- **Hitbox** — shape of affected area (single tile, 2×2, line, cross, etc.)
+- **Difficulty** — Easy / Medium / Hard (feeds into Math Engine)
+- **Effect** — damage, heal, status (status effects deferred to later phase)
+
+### Death & Recovery
+- A character that reaches 0 HP becomes **Downed** — stays on the map, cannot act
+- Any other party member can spend **1 AP** to revive a Downed character outside of active combat
+- Revived character returns with 30% HP
+- If **all party members are Downed simultaneously** → dungeon resets to the beginning
+- Characters keep their XP and items on reset — the dungeon run is lost, not the character
+
+### Win Condition
+- At least 1 hero standing when the last monster dies = dungeon cleared
+- End of dungeon: boss drops rare loot, XP awarded to all surviving characters
+
+---
+
+## Loot & Economy
+
+### Item Types
+- **Potions** — consumable, used during combat (costs 1 AP) or outside combat
+- **Gear** — equipment that improves stats (weapon, armor, etc.)
+- **Gold** — currency spent at the Store between dungeons
+
+### Drop Sources
+- Regular monsters → common loot, XP, gold
+- Dungeon boss → rare loot, more XP, more gold
+
+### Store
+- Accessible between dungeons
+- Players spend gold on potions, gear, and other items
+- Details TBD
 
 ---
 
@@ -119,6 +187,42 @@ No other game system needs to know about math operations.
   ```
 - Monsters have personality — funny, dramatic, taunting
 - LLM controls monster behavior completely (movement + skill choice + flavor)
+
+---
+
+## Authentication & User Management
+
+### Account Structure
+Two-level hierarchy:
+
+```
+Family Account (parent-owned)
+└── Player Profiles (one per kid)
+    └── Characters (one or more per profile)
+```
+
+### Family Account
+- Created and managed by a parent
+- Credentials: email + password
+- Responsible for: billing, profile management, parental settings (future)
+- One account per family
+
+### Player Profile
+- Created by parent under the family account
+- No password — kids select their profile from a list on login
+- Holds: display name, avatar, **age** (drives Math Engine difficulty)
+- Has its own: characters, inventory, gold, progress
+- Age is set by parent at profile creation, adjustable later
+
+### Session Flow
+1. Parent logs in with email + password
+2. Profile selection screen shown — all family profiles listed
+3. Kid taps their profile → enters the game (no password)
+4. Optional: parent can PIN-protect the account settings to prevent kids from changing ages or deleting profiles
+
+### Stay Logged In
+- Family account session persists (remember me)
+- Returning players go straight to profile selection screen
 
 ---
 
