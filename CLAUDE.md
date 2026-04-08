@@ -1,4 +1,4 @@
-# Mathcraft — Claude Context
+﻿# Mathcraft — Claude Context
 
 ## What is this?
 A turn-based math RPG for kids. Players fight monster waves by answering math questions.

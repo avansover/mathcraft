@@ -16,8 +16,8 @@ Follow-up TODOs: None — all placeholders resolved.
 ### I. Math Engine Independence (NON-NEGOTIABLE)
 The Math Engine MUST be a fully decoupled system, completely separate from all game logic.
 Game systems MUST NOT reference specific math operations (addition, division, etc.) directly.
-All game code MUST interact with the Math Engine only through a single interface: `GetQuestion(difficulty, playerAge)`.
-The Math Engine owns the mapping of `difficulty × age → question type + complexity`.
+All game code MUST interact with the Math Engine only through a single interface: `GetQuestion(rank)`.
+The Math Engine owns the mapping of `rank → question type + complexity`. Age determines starting unlocked rank at character creation only — it does not affect question generation.
 
 **Rationale**: This separation is the core architectural decision of Mathcraft. It allows the game
 to evolve independently of its educational content, and enables the math difficulty to be tuned
@@ -86,4 +86,4 @@ Version bump rules:
 - MINOR: New principle or section added
 - PATCH: Clarification, wording fix, non-semantic refinement
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-03 | **Last Amended**: 2026-04-03
+**Version**: 1.0.1 | **Ratified**: 2026-04-03 | **Last Amended**: 2026-04-08
