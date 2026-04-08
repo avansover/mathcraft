@@ -110,7 +110,7 @@ Skill
 ## Loot & Economy
 
 ### Item Types
-- **Potions** — consumable, used during combat (costs 1 AP) or outside combat
+- **Potions** — consumable, used during combat (costs 1 PP) or outside combat
 - **Gear** — equipment that improves stats (weapon, armor, etc.)
 - **Gold** — currency spent at the Store between dungeons
 
@@ -119,9 +119,9 @@ Skill
 - Dungeon boss → rare loot, more XP, more gold
 
 ### Store
-- Accessible between dungeons
+- Accessible from the Hub between dungeons
 - Players spend gold on potions, gear, and other items
-- Details TBD
+- **Deferred** — full store design TBD after core systems are built
 
 ---
 
@@ -211,24 +211,56 @@ Skill
 
 > The game never specifies a math operation.
 > It only specifies a skill rank (1, 2, or 3).
-> The Math Engine translates rank → question type and complexity.
+> The Math Engine randomly picks from the pool of category+range combos assigned to that rank.
 
 ### Key Design Principle
 The Math Engine is a standalone module.
 The game calls: `GetQuestion(rank)` → receives a question + correct answer.
 No other game system needs to know about math operations.
+All classes draw from the same pool — no class-specific math flavor.
 
-### Rank → Math Mapping (draft)
+### Structure
+Each **category+range combo** belongs to a rank. New combos can be added via config.
 
-| Rank | Math Difficulty | Example |
-|------|----------------|---------|
-| 1 | Easy | Addition / subtraction under 20 |
-| 2 | Medium | Multiplication tables |
-| 3 | Hard | Division, multi-step |
+```
+Rank 1 pool:
+  - Addition ≤ 20
+  - Subtraction ≤ 20
+
+Rank 2 pool:
+  - Addition ≤ 1000
+  - Subtraction ≤ 1000
+  - Multiplication ≤ 10
+
+Rank 3 pool:
+  - Addition ≤ 100,000
+  - Subtraction ≤ 100,000
+  - Multiplication ≤ 100
+```
+
+### Categories (Phase 1)
+
+| Category | Ranges | Constraint |
+|----------|--------|------------|
+| Addition | ≤20, ≤1000, ≤100,000 | None |
+| Subtraction | ≤20, ≤1000, ≤100,000 | Result must never be negative |
+| Multiplication | ≤10, ≤100, ≤1000 | None |
+
+### Future Categories (config, not Phase 1)
+- **Division** — whole result or with remainder (e.g. `17 ÷ 5 = 3 remainder 2`)
+- **Fractions** — e.g. `3/4 + 7/12`
+- **Brackets** — order of operations, e.g. `(5 - 4) × 12`
+- **Equations** — missing number, e.g. `87 - ? = 45`
+
+### Generation Rules
+1. Operands selected randomly within the category's range
+2. Subtraction: operands always ordered so result is ≥ 0 (no negative answers)
+3. Division: remainders are allowed — answer format is `X remainder Y`
+4. No de-duplication needed — pool is large enough, and remembering answers is the point
 
 ### Role of Age
 Age does NOT affect question generation.
-Age determines the **starting unlocked rank** at character creation:
+Age determines the **starting unlocked rank** at character creation only:
 
 | Age | Starting Unlocked Rank |
 |-----|----------------------|
@@ -349,6 +381,97 @@ Monsters always hit when they attack — no accuracy roll.
   ```
 - Monsters have personality — funny, dramatic, taunting
 - LLM controls monster behavior completely (movement + skill choice + flavor)
+
+---
+
+## Game Session Flow
+
+### Full Session Flow
+```
+Open App
+  ↓
+Login (parent email + password) → Profile Selection screen
+  ↓
+Hub (main menu)
+  ↓
+Select Dungeon
+  ↓
+Party Window
+  - Spot 1 (leader) → first kid selects profile + character
+  - Spots 2-4 → other kids join, each picks profile + character
+  - Solo play supported — leave spots 2-4 empty
+  ↓
+Loadout Screen (each player equips skill ranks for this run)
+  ↓
+Generate dungeon map → Enter dungeon
+  ↓
+Room by room combat
+  - Leader chooses which door to take between rooms
+  - Combat triggers on entering a room with monsters
+  ↓
+Dungeon Complete or Failed
+  ↓
+Rewards Screen
+  ↓
+Return to Hub
+```
+
+### The Hub
+Central screen between dungeon runs. Contains:
+- **Enter Dungeon** — start the flow above
+- **Store** — spend gold on items
+- **Characters** — manage characters, view stats, manage inventory
+
+### Party Formation Rules
+- Dungeon selected first, then party assembled
+- Spot 1 = party leader (chooses doors between rooms, no other special privileges)
+- Each spot = one player profile + one of their characters
+- Same profile cannot fill two spots
+- Solo play allowed (1 player, 1 character)
+- Max 4 players
+
+### Loadout Screen
+- Appears before every new dungeon run
+- Each player independently equips which rank to use for each of their skills
+- Only unlocked ranks are available to equip
+- Changes apply to this run only — persisted as the default for next time
+
+### Rewards
+- XP and loot distributed equally to all party members regardless of kill count
+- Rationale: support roles (Priest) enable success as much as damage dealers
+- Rewards applied immediately after the rewards screen
+- Level ups resolved on the rewards screen (stat increases, skill unlocks shown)
+- Return to Hub after rewards are claimed
+
+---
+
+## Solving Framework
+
+### Phase 1 — Keep It Simple
+Display the math question and provide an input field for the answer.
+
+```
+┌─────────────────────────┐
+│                         │
+│      45 + 464 = ?       │
+│                         │
+│   [ answer input box ]  │
+│                         │
+│       [ Submit ]        │
+│                         │
+└─────────────────────────┘
+```
+
+- Single input field for most categories
+- Division with remainder: two fields (quotient + remainder)
+- No timer in Phase 1
+- Wrong answer → immediate feedback, skill fails, AP spent
+
+### Future Enhancements (not Phase 1)
+- Timer per question
+- Visual animations on correct/wrong answer
+- On-screen number pad for younger kids
+- Hints system
 
 ---
 
