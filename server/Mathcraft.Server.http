@@ -1,0 +1,6 @@
+@Mathcraft.Server_HostAddress = http://localhost:5171
+
+GET {{Mathcraft.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

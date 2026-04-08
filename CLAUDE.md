@@ -19,7 +19,7 @@ mathcraft/
 │       ├── data-model.md         <- entities and fields (complete)
 │       ├── quickstart.md         <- validation steps (complete)
 │       ├── contracts/api.md      <- REST endpoints (complete)
-│       └── tasks.md              <- NEXT: generate with /speckit-tasks
+│       └── tasks.md              ✅ 58 tasks across 9 groups
 ├── .specify/
 │   └── memory/constitution.md   <- project principles v1.0.1
 ├── client/                       <- React frontend (not started yet)
@@ -28,8 +28,8 @@ mathcraft/
 
 ## Current Status
 **Branch:** `001-user-auth`
-**Last completed:** `/speckit-plan` ✅
-**Next step:** `/speckit-tasks` — generate task list for 001-user-auth
+**Last completed:** `/speckit-tasks` ✅
+**Next step:** Start implementing — begin with Group 0 (T-001 to T-004) in `tasks.md`
 
 ## Tech Stack (locked for Phase 1)
 - **Backend:** .NET 8 (C#) — ASP.NET Core, Entity Framework Core (code-first), MediatR (full CQRS)
