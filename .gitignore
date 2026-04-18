@@ -17,8 +17,8 @@ build/
 .env*.local
 
 # .NET
-server/bin/
-server/obj/
+**/bin/
+**/obj/
 server/appsettings.Development.json
 *.user
 *.suo
