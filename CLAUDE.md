@@ -42,6 +42,15 @@ mathcraft/
 - **Hosting:** Railway (dev/staging)
 - **Monorepo:** `client/` + `server/` under one repo
 
+## EF Core Migration Policy
+During development, migrations can and should be thrown away if they get messy or corrupted. The reset procedure is:
+1. Drop the Neon database (via dashboard or `DROP SCHEMA public CASCADE; CREATE SCHEMA public;`)
+2. Delete the `server/src/Data/Migrations/` folder
+3. `dotnet ef migrations add InitialSchema`
+4. `dotnet ef database update`
+
+**Rule:** Never edit a migration file by hand after it has been applied. If something's wrong — roll back, delete the migration file, fix the entity, re-add.
+
 ## Architecture (decided)
 - **Full MediatR CQRS** — all controllers dispatch via `IMediator`, no service layer
 - **Unified response:** all handlers return `Result<T>` wrapper
