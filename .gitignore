@@ -23,6 +23,9 @@ server/appsettings.Development.json
 *.user
 *.suo
 
+# Visual Studio
+.vs/
+
 # OS
 .DS_Store
 Thumbs.db
